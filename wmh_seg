@@ -29,7 +29,7 @@ fi
 if [ "$input_used" = true ] && [ "$output_used" = true ]; then
   echo "Input file: $img"
   echo "Output file: $outpath"
-  wmh_pytorch.py $img $outpath $gpu
+  wmh_pytorch.py $img $outpath $gpu $wmh_seg_home
 else
   echo "Please specify both -i and -o flags."
   usage;

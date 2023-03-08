@@ -8,25 +8,30 @@ import torchvision
 from tqdm import tqdm
 from einops import rearrange
 import sys
+from transformers import pipeline
+from transformers import AutoModel
+
+pdb.set_trace()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 train_transforms = torchvision.transforms.Compose([ 
                     torchvision.transforms.ToTensor(),
-                    torchvision.transforms.CenterCrop((224, 256,)),
+                    torchvision.transforms.CenterCrop((224, 224,)),
                     ])
 
 in_path=sys.argv[1]
 out_path=sys.argv[2]
 gpu=sys.argv[3]
+wmh_seg_home=sys.argv[4]
 
 if gpu == 'True':
-    model = torch.load("multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cuda'))
+    model = torch.load(f"{wmh_seg_home}/trained_model/pytorch/model/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cuda'))
     model.eval()
     model.to(device)
     print('Configuring model on GPU')
 else:
-    model = torch.load("multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
+    model = torch.load(f"{wmh_seg_home}/trained_model/pytorch/model/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
     model.eval()
     model.to(device)
     print('Configuring model on CPU')
@@ -43,9 +48,10 @@ def wmh_seg(in_path, out_path, train_transforms, device):
     input = input.to(device)
     input = torch.unsqueeze(input, 1)
     prediction_input = input/torch.max(input)
+    print(f'Predicting.....')
     for idx in range(input.shape[0]):
-        print(f'Predicting.....')
         input_image = prediction_input[idx].repeat(3,1,1)
+        pdb.set_trace()
         prediction[:, :, idx] = model(torch.unsqueeze(input_image, 0).float()).squeeze().detach().cpu().numpy()
 
     #saving images
