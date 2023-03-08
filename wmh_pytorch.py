@@ -19,13 +19,18 @@ train_transforms = torchvision.transforms.Compose([
                     torchvision.transforms.CenterCrop((224, 256,)),
                     ])
 
-model = torch.load("multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
-model.eval()
-model.to(device)
-
 in_path=sys.argv[1]
 out_path=sys.argv[2]
+gpu=sys.argv[3]
 
+if gpu == 'True':
+    model = torch.load("multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cuda'))
+    model.eval()
+    model.to(device)
+else:
+    model = torch.load("multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
+    model.eval()
+    model.to(device)
 
 def wmh_seg(in_path, out_path, train_transforms, device):
     img = nib.load(in_path)
