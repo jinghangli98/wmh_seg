@@ -11,7 +11,6 @@ import sys
 from transformers import pipeline
 from transformers import AutoModel
 
-pdb.set_trace()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -31,6 +30,7 @@ if gpu == 'True':
     model.to(device)
     print('Configuring model on GPU')
 else:
+    pdb.set_trace()
     model = torch.load(f"{wmh_seg_home}/trained_model/pytorch/model/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
     model.eval()
     model.to(device)
