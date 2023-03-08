@@ -1,0 +1,37 @@
+#!/bin/bash
+
+usage() { echo "usage: wmh_seg [-i input file] [-o output file]" 1>&2; exit 1; }
+gpu='False'
+while getopts ":i:o:g" o; do
+    case "${o}" in
+        i)
+            img=${OPTARG}
+            input_used=true
+            ;;
+        o)
+            outpath=${OPTARG}
+            output_used=true
+            ;;
+        g)
+            gpu='True'
+        ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+if [ $OPTIND -eq 1 ]; then 
+usage; 
+
+fi
+
+if [ "$input_used" = true ] && [ "$output_used" = true ]; then
+  echo "Input file: $img"
+  echo "Output file: $outpath"
+  wmh_pytorch.py $img $outpath $gpu
+else
+  echo "Please specify both -i and -o flags."
+  usage;
+  exit 1
+fi
