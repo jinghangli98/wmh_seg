@@ -7,9 +7,6 @@ import pdb
 import torchvision
 from tqdm import tqdm
 from einops import rearrange
-import glob
-from patchify import patchify, unpatchify
-from natsort import natsorted
 import sys
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -27,10 +24,12 @@ if gpu == 'True':
     model = torch.load("multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cuda'))
     model.eval()
     model.to(device)
+    print('Configuring model on GPU')
 else:
     model = torch.load("multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
     model.eval()
     model.to(device)
+    print('Configuring model on CPU')
 
 def wmh_seg(in_path, out_path, train_transforms, device):
     img = nib.load(in_path)
@@ -45,6 +44,7 @@ def wmh_seg(in_path, out_path, train_transforms, device):
     input = torch.unsqueeze(input, 1)
     prediction_input = input/torch.max(input)
     for idx in range(input.shape[0]):
+        print(f'Predicting.....')
         input_image = prediction_input[idx].repeat(3,1,1)
         prediction[:, :, idx] = model(torch.unsqueeze(input_image, 0).float()).squeeze().detach().cpu().numpy()
 
