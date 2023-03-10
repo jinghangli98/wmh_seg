@@ -3,12 +3,12 @@
 ```
 cd $HOME
 git clone https://github.com/jinghangli98/wmh_seg.git
-cd wmh_seg/trained_model/pytorch
+cd wmh_seg/trained_model/pytorch/model
 wget https://huggingface.co/jil202/wmh/resolve/main/multi_site_2d_transformer_Unet_mit_b5_0.81.pth
 ```
 
 ```
-cd wmh_seg
+cd $HOME/wmh_seg
 conda env create -f wmh.yml -n wmh
 ```
 
