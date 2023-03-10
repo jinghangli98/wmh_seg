@@ -9,9 +9,6 @@ from tqdm import tqdm
 from einops import rearrange
 import sys
 
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 train_transforms = torchvision.transforms.Compose([ 
                     torchvision.transforms.ToTensor(),
                     torchvision.transforms.CenterCrop((224, 256,)),
@@ -23,6 +20,7 @@ gpu=sys.argv[3]
 wmh_seg_home=sys.argv[4]
 
 if gpu == 'True':
+    pdb.set_trace()
     model = torch.load(f"{wmh_seg_home}/trained_model/pytorch/model/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cuda'))
     model.eval()
     model.to(device)
