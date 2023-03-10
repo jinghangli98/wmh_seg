@@ -1,4 +1,4 @@
-# wmh_production
+# wmh_seg
 
 ```
 cd $HOME
