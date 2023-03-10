@@ -1,6 +1,11 @@
 # wmh_production
 
-```git lfs clone https://github.com/jinghangli98/wmh_seg.git```
+```
+cd $HOME
+git clone https://github.com/jinghangli98/wmh_seg.git
+cd wmh_seg/trained_model/pytorch
+wget https://huggingface.co/jil202/wmh/resolve/main/multi_site_2d_transformer_Unet_mit_b5_0.81.pth
+```
 
 ```
 cd wmh_seg
