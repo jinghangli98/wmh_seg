@@ -14,7 +14,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 train_transforms = torchvision.transforms.Compose([ 
                     torchvision.transforms.ToTensor(),
-                    torchvision.transforms.CenterCrop((224, 224,)),
+                    torchvision.transforms.CenterCrop((224, 256,)),
                     ])
 
 in_path=sys.argv[1]
