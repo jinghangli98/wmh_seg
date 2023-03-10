@@ -8,6 +8,6 @@ conda env create -f wmh.yml -n wmh
 ```
 
 ```
-export wmh_seg_home="$HOME/wmh_seg" 
+export wmh_seg_home=$HOME/wmh_seg
 export PATH="$wmh_seg_home:$PATH"
 ```
