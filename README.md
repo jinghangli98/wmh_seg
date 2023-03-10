@@ -4,7 +4,7 @@
 
 ```
 cd wmh_seg
-
+conda env create -f wmh.yml -n wmh
 ```
 
 ```
