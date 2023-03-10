@@ -53,7 +53,10 @@ def wmh_seg(in_path, out_path, train_transforms, device):
     arg = prediction > 0.999
     out = np.zeros(prediction.shape)
     out[arg] = 1
-    img_fit = input.squeeze().detach().numpy()
+    if gpu == "True":
+        img_fit = input.squeeze().cpu().numpy()
+    else:
+        img_fit = input.squeeze().detach().numpy()
     img_fit = rearrange(img_fit, 'd0 d1 d2 -> d1 d2 d0')
     train_transforms = torchvision.transforms.Compose([
                     torchvision.transforms.ToTensor(),
