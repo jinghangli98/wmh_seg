@@ -8,7 +8,7 @@ dependencies:
     - pillow
     - tqdm
     - pip:
-        - torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+        - torch==1.11.0 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
         - nibabel
         - einops
         - segmentation-models-pytorch
