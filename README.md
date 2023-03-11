@@ -1,7 +1,9 @@
 # wmh_seg
+An automatic white matter lesion segmentaion tool on T2 weighted Fluid Attenuated Inverse Recovery (FLAIR) images. The model was trained over 300 subjects FLAIR scans at 1.5T, 3T and 7T, including images from University of Pittsburgh, University of Nottingham, UT Health San Antonio, UMC Utrecht, NUHS Singapore, and VU Amsterdam. Data augmentation was implemented using [torchio](https://torchio.readthedocs.io/transforms/transforms.html)
+## Installation
 
 ### Cloning repository and trained model
-```
+```bash
 cd $HOME
 git clone https://github.com/jinghangli98/wmh_seg.git
 cd wmh_seg
@@ -9,13 +11,13 @@ wget https://huggingface.co/jil202/wmh/resolve/main/multi_site_2d_transformer_Un
 ```
 
 ### Creating conda environment
-```
+```bash
 cd $HOME/wmh_seg
 conda env create -f wmh.yml -n wmh
 ```
 
 ### Add to path
-```
+```bash
 export wmh_seg_home=$HOME/wmh_seg
 export PATH="$wmh_seg_home:$PATH"
 ```
