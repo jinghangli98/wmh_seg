@@ -1,5 +1,8 @@
 # wmh_seg
 An automatic white matter lesion segmentaion tool on T2 weighted Fluid Attenuated Inverse Recovery (FLAIR) images. The model was trained over 300 subjects FLAIR scans at 1.5T, 3T and 7T, including images from University of Pittsburgh, University of Nottingham, UT Health San Antonio, UMC Utrecht, NUHS Singapore, and VU Amsterdam. Data augmentation was implemented using [torchio](https://torchio.readthedocs.io/transforms/transforms.html)
+
+![Generation examples](augmentation-demo.png)
+
 ## Installation
 
 ### Cloning repository and trained model
