@@ -26,7 +26,7 @@ conda env create -f wmh.yml -n wmh
 export wmh_seg_home=$HOME/wmh_seg
 export PATH="$wmh_seg_home:$PATH"
 ```
-You can certainly add these two lines of code in your .zshrc or .bashrc files.
+You can certainly add these two lines of code in your ~/.zshrc or ~/.bashrc files.
 
 ## Example usage
 ```bash
@@ -41,4 +41,4 @@ wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 ```bash
 ls *.nii | parallel --jobs 6 wmg_seg -i {} -o {.}_wmh.nii.gz -g
 ```
-This line of bash command would process all the .nii files on gpu 6 files at a time in the current directory.
+This line of bash command would process all the .nii files on gpu, 6 files at a time in the current directory.
