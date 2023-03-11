@@ -21,13 +21,13 @@ wmh_seg_home=sys.argv[4]
 
 if gpu == 'True':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = torch.load(f"{wmh_seg_home}/trained_model/pytorch/model/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cuda'))
+    model = torch.load(f"{wmh_seg_home}/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cuda'))
     model.eval()
     model.to(device)
     print('Configuring model on GPU')
 else:
     device = torch.device('cpu')
-    model = torch.load(f"{wmh_seg_home}/trained_model/pytorch/model/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
+    model = torch.load(f"{wmh_seg_home}/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=torch.device('cpu'))
     model.eval()
     model.to(device)
     print('Configuring model on CPU')
