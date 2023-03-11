@@ -14,7 +14,7 @@ An automatic white matter lesion segmentaion tool on T2 weighted Fluid Attenuate
 cd $HOME
 git clone https://github.com/jinghangli98/wmh_seg.git
 cd wmh_seg
-wget https://huggingface.co/jil202/wmh/resolve/main/multi_site_2d_transformer_Unet_mit_b5_0.81.pth
+wget model_link
 ```
 
 ### Creating conda environment
