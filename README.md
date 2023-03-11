@@ -22,3 +22,19 @@ export wmh_seg_home=$HOME/wmh_seg
 export PATH="$wmh_seg_home:$PATH"
 ```
 You can certainly add these two lines of code in your .zshrc or .bashrc files.
+
+## Example usage
+```bash
+wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
+```
+```-i``` is the input image path
+
+```-o``` is the output image path
+
+```-g``` (optional) specifies whether the model would perform on nividia gpu
+
+```bash
+ls *.nii | parallel --jobs 6 wmg_seg -i {} -o {.}_wmh.nii.gz -g
+```
+This line of bash command would process all the .nii files on gpu in the current directory and save the output with _wmh.nii.gz after file name. 
+
