@@ -1,9 +1,10 @@
 # wmh_seg
-An automatic white matter lesion segmentaion tool on T2 weighted Fluid Attenuated Inverse Recovery (FLAIR) images. The model was trained over 300 subjects FLAIR scans at 1.5T, 3T and 7T, including images from University of Pittsburgh, University of Nottingham, UT Health San Antonio, UMC Utrecht, NUHS Singapore, and VU Amsterdam. Data augmentation was implemented using [torchio](https://torchio.readthedocs.io/transforms/transforms.html)
+An automatic white matter lesion segmentaion tool on T2 weighted Fluid Attenuated Inverse Recovery (FLAIR) images. The model was trained over 300  FLAIR scans at 1.5T, 3T and 7T, including images from University of Pittsburgh, University of Nottingham, UT Health San Antonio, UMC Utrecht, NUHS Singapore, and VU Amsterdam. Additionaly, data augmentation was implemented using [torchio](https://torchio.readthedocs.io/transforms/transforms.html)
 
 <p align="center">
 <img src="https://github.com/jinghangli98/wmh_seg/blob/main/dataAugmentation.png" width=50% height=50%>
 </p>
+
 ## Installation
 
 ### Cloning repository and trained model
@@ -40,5 +41,4 @@ wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 ```bash
 ls *.nii | parallel --jobs 6 wmg_seg -i {} -o {.}_wmh.nii.gz -g
 ```
-This line of bash command would process all the .nii files on gpu in the current directory and save the output with _wmh.nii.gz after file name. 
-
+This line of bash command would process all the .nii files on gpu 6 files at a time in the current directory.
