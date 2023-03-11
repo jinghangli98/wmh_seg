@@ -4,6 +4,7 @@ An automatic white matter lesion segmentaion tool on T2 weighted Fluid Attenuate
 <p align="center">
 <img src="https://github.com/jinghangli98/wmh_seg/blob/main/dataAugmentation.png" width=50% height=50%>
 <img src="https://github.com/jinghangli98/wmh_seg/blob/main/comparision.png">
+<img src="https://github.com/jinghangli98/wmh_seg/blob/main/comparision2.png">
 </p>
 
 ## Installation
