@@ -38,7 +38,7 @@ wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 
 ```-o``` is the output image path
 
-```-g``` (optional) specifies whether the model would perform on nividia gpu
+```-g``` (optional) specifies whether the model would be configured on nividia gpu
 
 ```bash
 ls *.nii | parallel --jobs 6 wmg_seg -i {} -o {.}_wmh.nii.gz -g
