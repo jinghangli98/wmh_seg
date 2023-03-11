@@ -19,3 +19,4 @@ conda env create -f wmh.yml -n wmh
 export wmh_seg_home=$HOME/wmh_seg
 export PATH="$wmh_seg_home:$PATH"
 ```
+You can certainly add these two lines of code in your .zshrc or .bashrc files.
