@@ -32,6 +32,7 @@ You can certainly add these two lines of code in your ~/.zshrc or ~/.bashrc file
 
 ## Example usage
 ```bash
+conda activate wmh
 wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 ```
 ```-i``` is the input image path
