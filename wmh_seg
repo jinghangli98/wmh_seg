@@ -18,7 +18,7 @@ while getopts ":i:o:g:v:" o; do
         ;;
         v)
             verbose='True'
-        ::
+        ;;
         *)
             usage
             ;;
