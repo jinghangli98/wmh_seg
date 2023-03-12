@@ -18,6 +18,7 @@ in_path=sys.argv[1]
 out_path=sys.argv[2]
 gpu=sys.argv[3]
 wmh_seg_home=sys.argv[4]
+verbose=sys.argv[5]
 
 if gpu == 'True':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -45,9 +46,15 @@ def wmh_seg(in_path, out_path, train_transforms, device):
     input = torch.unsqueeze(input, 1)
     prediction_input = input/torch.max(input)
     print(f'Predicting.....')
-    for idx in range(input.shape[0]):
-        input_image = prediction_input[idx].repeat(3,1,1)
-        prediction[:, :, idx] = model(torch.unsqueeze(input_image, 0).float()).squeeze().detach().cpu().numpy()
+    if verbose == "True":
+        for idx in tqdm(range(input.shape[0])):
+            input_image = prediction_input[idx].repeat(3,1,1)
+            prediction[:, :, idx] = model(torch.unsqueeze(input_image, 0).float()).squeeze().detach().cpu().numpy()
+            
+    elif verbose != "True":
+        for idx in range(input.shape[0]):
+            input_image = prediction_input[idx].repeat(3,1,1)
+            prediction[:, :, idx] = model(torch.unsqueeze(input_image, 0).float()).squeeze().detach().cpu().numpy()
 
     #saving images
     arg = prediction > 0.999
