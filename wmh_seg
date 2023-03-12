@@ -3,7 +3,7 @@
 usage() { echo "usage: wmh_seg [-i input file] [-o output file]" 1>&2; exit 1; }
 gpu='False'
 verbose='False'
-while getopts ":i:o:g:v:" o; do
+while getopts ":i:o:g:v" o; do
     case "${o}" in
         i)
             img=${OPTARG}
@@ -15,10 +15,10 @@ while getopts ":i:o:g:v:" o; do
             ;;
         g)
             gpu='True'
-        ;;
+            ;;
         v)
             verbose='True'
-        ;;
+            ;;
         *)
             usage
             ;;
