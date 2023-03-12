@@ -3,7 +3,7 @@
 usage() { echo "usage: wmh_seg [-i input file] [-o output file] [-g (optional) using cuda device] [-v (optional) prediction progression]" 1>&2; exit 1; }
 gpu='False'
 verbose='False'
-while getopts ":i:o:g:v:h" o; do
+while getopts ":i:o:g:h:v" o; do
     case "${o}" in
         i)
             img=${OPTARG}
@@ -22,9 +22,7 @@ while getopts ":i:o:g:v:h" o; do
         h)
             usage
             ;;
-        *)
-            usage
-            ;;
+
     esac
 done
 shift $((OPTIND-1))
