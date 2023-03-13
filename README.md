@@ -41,6 +41,8 @@ wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 
 ```-g``` (optional) specifies whether the model would be configured on nividia gpu
 
+```-v``` (optional) monitor prediction progress
+
 ```bash
 ls *.nii | parallel --jobs 6 wmg_seg -i {} -o {.}_wmh.nii.gz -g
 ```
