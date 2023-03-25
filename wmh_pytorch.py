@@ -11,7 +11,7 @@ import sys
 
 train_transforms = torchvision.transforms.Compose([ 
                     torchvision.transforms.ToTensor(),
-                    torchvision.transforms.CenterCrop((224, 256,)),
+                    torchvision.transforms.Resize((224, 256,)),
                     ])
 
 in_path=sys.argv[1]
@@ -33,14 +33,14 @@ else:
     model.to(device)
     print('Configuring model on CPU')
 
-def wmh_seg(in_path, out_path, train_transforms, device):
+def wmh_seg(in_path, out_path, train_transforms, device, ):
     img = nib.load(in_path)
     input = np.squeeze(img.get_fdata())
 
     origin_size = img.get_fdata().shape
     affine = img.affine
     prediction = np.zeros((224,256,input.shape[-1]))
-
+    
     input = train_transforms(input)
     input = input.to(device)
     input = torch.unsqueeze(input, 1)
@@ -65,8 +65,10 @@ def wmh_seg(in_path, out_path, train_transforms, device):
     else:
         img_fit = input.squeeze().detach().numpy()
     img_fit = rearrange(img_fit, 'd0 d1 d2 -> d1 d2 d0')
+    
     train_transforms = torchvision.transforms.Compose([
                     torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Resize((img.get_fdata().shape[0], img.get_fdata().shape[1],)),
                     torchvision.transforms.CenterCrop((img.get_fdata().shape[0], img.get_fdata().shape[1],)),])
     img_fit = train_transforms(img_fit).detach().cpu().numpy()
     out = train_transforms(out).detach().cpu().numpy()
