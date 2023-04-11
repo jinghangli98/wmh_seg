@@ -44,6 +44,6 @@ wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 ```-v``` (optional) monitor prediction progress
 
 ```bash
-ls *.nii | parallel --jobs 6 wmg_seg -i {} -o {.}_wmh.nii.gz -g
+ls *.nii | parallel --jobs 6 wmh_seg -i {} -o {.}_wmh.nii.gz -g
 ```
 This line of bash command would process all the .nii files on gpu in the current directory, 6 files at a time. (You might need to install GNU parallel)
