@@ -1,42 +1,51 @@
 #!/bin/bash
 
-usage() { echo "usage: wmh_seg [-i input file] [-o output file] [-g (optional) using cuda device] [-v (optional) prediction progression]" 1>&2; exit 1; }
-gpu='False'
-verbose='False'
-while getopts ":i:o:g:h:v" o; do
-    case "${o}" in
-        i)
-            img=${OPTARG}
-            input_used=true
-            ;;
-        o)
-            outpath=${OPTARG}
-            output_used=true
-            ;;
-        g)
-            gpu='True'
-            ;;
-        v)
-            verbose='True'
-            ;;
-        h)
-            usage
-            ;;
+usage() {
+  echo "Usage: wmh_seg.sh -i <input_file> -o <output_file> [-g] [-pmb] [-v]"
+  exit 1
+}
 
-    esac
+input_file=""
+output_file=""
+use_gpu="False"
+enable_pmb="False"
+verbose="False"
+
+while getopts ":i:o:gpv" opt; do
+  case ${opt} in
+    i)
+      input_file=${OPTARG}
+      ;;
+    o)
+      output_file=${OPTARG}
+      ;;
+    g)
+      use_gpu="True"
+      ;;
+    p)
+      enable_pmb="True"
+      ;;
+    v)
+      verbose="True"
+      ;;
+    *)
+      usage
+      ;;
+  esac
 done
-shift $((OPTIND-1))
-if [ $OPTIND -eq 1 ]; then 
-usage; 
 
+if [[ -z $input_file || -z $output_file ]]; then
+  echo "Error: Missing input or output path."
+  usage
 fi
 
-if [ "$input_used" = true ] && [ "$output_used" = true ]; then
-  echo "Input file: $img"
-  echo "Output file: $outpath"
-  wmh_pytorch.py $img $outpath $gpu $wmh_seg_home $verbose
-else
-  echo "Please specify both -i and -o flags."
-  usage;
-  exit 1
+echo "Input file: $input_file"
+echo "Output file: $output_file"
+echo "Use GPU: $use_gpu"
+echo "Enable PMB: $enable_pmb"
+echo "Verbose mode: $verbose"
+
+# Run wmh_pytorch.py script only if input and output paths are provided
+if [[ -n $input_file && -n $output_file ]]; then
+  wmh_pytorch.py "$input_file" "$output_file" "$use_gpu" "$wmh_seg_home" "$verbose" "$enable_pmb" 
 fi
