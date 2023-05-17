@@ -15,6 +15,8 @@ cd $HOME
 git clone https://github.com/jinghangli98/wmh_seg.git
 cd wmh_seg
 wget https://huggingface.co/jil202/wmh/resolve/main/multi_site_2d_transformer_Unet_mit_b5_0.81.pth
+wget https://huggingface.co/jil202/wmh/resolve/main/pmb_2d_transformer_Unet_mit_b5.pth
+
 ```
 
 ### Creating conda environment
@@ -42,6 +44,8 @@ wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 ```-g``` (optional) specifies whether the model would be configured on nividia gpu
 
 ```-v``` (optional) monitor prediction progress
+
+```-p``` (optional) enable segmentation on T1-weighted post mortem brain (left hemisphere)
 
 ```bash
 ls *.nii | parallel --jobs 6 wmh_seg -i {} -o {.}_wmh.nii.gz -g
