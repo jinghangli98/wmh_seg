@@ -9,7 +9,6 @@ from einops import rearrange
 import sys
 import pdb
 import torchio as tio
-import matplotlib.pyplot as plt
 
 in_path=sys.argv[1]
 out_path=sys.argv[2]
@@ -82,7 +81,6 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
         out = np.squeeze(out)
         
     else:
-        pdb.set_trace()
         transform = tio.transforms.Resize((img_orig.get_fdata().shape[0], img_orig.get_fdata().shape[1], img_orig.get_fdata().shape[2]))
         out = transform(np.expand_dims(out, 0))
         out = np.squeeze(out)
