@@ -30,11 +30,15 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
         input = torch.unsqueeze(input, 1)
         
     else:
-        img = nib.load(in_path)
+        img_orig = nib.load(in_path)
+        transform = tio.transforms.Resize((255,256,257))
+        img = transform(img_orig)
         input = np.squeeze(img.get_fdata())
+        prediction_axial = np.zeros((255,256,257))
+        prediction_cor = np.zeros((255,256,257))
+        prediction_sag = np.zeros((255,256,257))
+        input = torch.tensor(input)
         affine = img.affine
-        prediction = np.zeros((224,256,input.shape[-1]))
-        input = train_transforms(input)
         input = torch.unsqueeze(input, 1)
         
     input = input.to(device)
@@ -43,9 +47,13 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
     
     if verbose == "True":
         for idx in tqdm(range(input.shape[0])):
-            input_image = prediction_input[idx].repeat(3,1,1)
-            prediction[:, :, idx] = model(torch.unsqueeze(input_image, 0).float()).squeeze().detach().cpu().numpy()
-        
+            axial_img = prediction_input[idx].repeat(3,1,1)
+            cor_img = rearrange(prediction_input[:,:,idx,:], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
+            sag_img = rearrange(prediction_input[:,:,:,idx], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
+            prediction_axial[:, :, idx] = model(torch.unsqueeze(axial_img, 0).float()).squeeze().detach().cpu().numpy()
+            prediction_cor[:, :, idx] = model(torch.unsqueeze(cor_img, 0).float()).squeeze().detach().cpu().numpy()
+            prediction_sag[:, :, idx] = model(torch.unsqueeze(sag_img, 0).float()).squeeze().detach().cpu().numpy()
+        prediction = prediction_axial + prediction_cor + prediction_sag
     elif verbose != "True":
         for idx in range(input.shape[0]):
             input_image = prediction_input[idx].repeat(3,1,1)
@@ -95,9 +103,10 @@ else:
 if pmb == "False":
     train_transforms = torchvision.transforms.Compose([ 
                         torchvision.transforms.ToTensor(),
-                        torchvision.transforms.Resize((224, 256,)), 
+                        torchvision.transforms.Resize((255, 256,)), 
                         ])
-    model = torch.load(f"{wmh_seg_home}/multi_site_2d_transformer_Unet_mit_b5_0.81.pth", map_location=device)
+    
+    model = torch.load(f"{wmh_seg_home}/ChallengeMatched_Unet_mit_b5.pth", map_location=device)
     model.eval()
     model.to(device)
     wmh_seg(in_path, out_path, train_transforms, device, pmb)
