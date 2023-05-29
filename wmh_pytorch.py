@@ -63,8 +63,13 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
         prediction = prediction_axial + prediction_cor + prediction_sag
     elif verbose != "True":
         for idx in range(input.shape[0]):
-            input_image = prediction_input[idx].repeat(3,1,1)
-            prediction[:, :, idx] = model(torch.unsqueeze(input_image, 0).float()).squeeze().detach().cpu().numpy()
+            axial_img = rearrange(prediction_input[:,:,:,idx], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
+            cor_img = rearrange(prediction_input[:,:,idx,:], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
+            sag_img = prediction_input[idx,:,:,:].repeat(3,1,1)
+            prediction_axial[:, :, idx] = model(torch.unsqueeze(axial_img, 0).float()).squeeze().detach().cpu().numpy()
+            prediction_cor[:, idx, :] = model(torch.unsqueeze(cor_img, 0).float()).squeeze().detach().cpu().numpy()
+            prediction_sag[idx, :, :] = model(torch.unsqueeze(sag_img, 0).float()).squeeze().detach().cpu().numpy()
+        prediction = prediction_axial + prediction_cor + prediction_sag
 
     #saving images
     out = reduceSize(prediction)
