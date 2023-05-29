@@ -1,7 +1,7 @@
 #!/bin/bash
 
 usage() {
-  echo "Usage: wmh_seg.sh -i <input_file> -o <output_file> [-g] [-pmb] [-v]"
+  echo "Usage: wmh_seg.sh -i <input_file> -o <output_file> [-g] [-pmb] [-v] [-b <batch_size>]"
   exit 1
 }
 
@@ -10,8 +10,9 @@ output_file=""
 use_gpu="False"
 enable_pmb="False"
 verbose="False"
+batch=1
 
-while getopts ":i:o:gpv" opt; do
+while getopts ":i:o:gpvb:" opt; do
   case ${opt} in
     i)
       input_file=${OPTARG}
@@ -27,6 +28,9 @@ while getopts ":i:o:gpv" opt; do
       ;;
     v)
       verbose="True"
+      ;;
+    b)
+      batch=${OPTARG}
       ;;
     *)
       usage
@@ -44,8 +48,9 @@ echo "Output file: $output_file"
 echo "Use GPU: $use_gpu"
 echo "Enable PMB: $enable_pmb"
 echo "Verbose mode: $verbose"
+echo "Inference batch size: $batch"
 
 # Run wmh_pytorch.py script only if input and output paths are provided
 if [[ -n $input_file && -n $output_file ]]; then
-  wmh_pytorch.py "$input_file" "$output_file" "$use_gpu" "$wmh_seg_home" "$verbose" "$enable_pmb" 
+  wmh_pytorch.py "$input_file" "$output_file" "$use_gpu" "$wmh_seg_home" "$verbose" "$enable_pmb" "$batch"
 fi

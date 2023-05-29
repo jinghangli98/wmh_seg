@@ -16,9 +16,10 @@ gpu=sys.argv[3]
 wmh_seg_home=sys.argv[4]
 verbose=sys.argv[5]
 pmb=sys.argv[6]
+batch=np.int16(sys.argv[7])
 
 def reduceSize(prediction):
-    arg = prediction > 0.1
+    arg = prediction > 0.5
     out = np.zeros(prediction.shape)
     out[arg] = 1
     
@@ -53,22 +54,26 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
     print(f'Predicting.....')
     
     if verbose == "True":
-        for idx in tqdm(range(input.shape[0])):
-            axial_img = rearrange(prediction_input[:,:,:,idx], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
-            cor_img = rearrange(prediction_input[:,:,idx,:], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
-            sag_img = prediction_input[idx,:,:,:].repeat(3,1,1)
-            prediction_axial[:, :, idx] = model(torch.unsqueeze(axial_img, 0).float()).squeeze().detach().cpu().numpy()
-            prediction_cor[:, idx, :] = model(torch.unsqueeze(cor_img, 0).float()).squeeze().detach().cpu().numpy()
-            prediction_sag[idx, :, :] = model(torch.unsqueeze(sag_img, 0).float()).squeeze().detach().cpu().numpy()
+        for idx in tqdm(range(input.shape[0]//batch)):
+            axial_img = rearrange(prediction_input[:,:,:,idx*batch:(idx+1)*batch], 'd0 d1 d2 d3 -> d3 d1 d0 d2').repeat(1,3,1,1)
+            cor_img = rearrange(prediction_input[:,:,idx*batch:(idx+1)*batch,:], 'd0 d1 d2 d3 -> d2 d1 d0 d3').repeat(1,3,1,1)
+            sag_img = rearrange(prediction_input[idx*batch:(idx+1)*batch,:,:,:], 'd0 d1 d2 d3 -> d0 d1 d2 d3').repeat(1,3,1,1)
+            stacked_input = torch.vstack((axial_img, cor_img, sag_img))
+            prediction_axial[:,:,idx*batch:(idx+1)*batch] = rearrange(model(stacked_input.float())[0:batch].detach().cpu().numpy(), 'd0 d1 d2 d3 -> d2 d3 (d0 d1)')
+            prediction_cor[:,idx*batch:(idx+1)*batch,:] = rearrange(model(stacked_input.float())[batch:2*batch].detach().cpu().numpy(), 'd0 d1 d2 d3 -> d2 (d0 d1) d3')
+            prediction_sag[idx*batch:(idx+1)*batch,:,:] = rearrange(model(stacked_input.float())[2*batch::].detach().cpu().numpy(), 'd0 d1 d2 d3 -> (d0 d1) d2 d3')
+
         prediction = prediction_axial + prediction_cor + prediction_sag
     elif verbose != "True":
-        for idx in range(input.shape[0]):
-            axial_img = rearrange(prediction_input[:,:,:,idx], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
-            cor_img = rearrange(prediction_input[:,:,idx,:], 'd0 d1 d2 -> d1 d0 d2').repeat(3,1,1)
-            sag_img = prediction_input[idx,:,:,:].repeat(3,1,1)
-            prediction_axial[:, :, idx] = model(torch.unsqueeze(axial_img, 0).float()).squeeze().detach().cpu().numpy()
-            prediction_cor[:, idx, :] = model(torch.unsqueeze(cor_img, 0).float()).squeeze().detach().cpu().numpy()
-            prediction_sag[idx, :, :] = model(torch.unsqueeze(sag_img, 0).float()).squeeze().detach().cpu().numpy()
+        for idx in range(input.shape[0]//batch):
+            axial_img = rearrange(prediction_input[:,:,:,idx*batch:(idx+1)*batch], 'd0 d1 d2 d3 -> d3 d1 d0 d2').repeat(1,3,1,1)
+            cor_img = rearrange(prediction_input[:,:,idx*batch:(idx+1)*batch,:], 'd0 d1 d2 d3 -> d2 d1 d0 d3').repeat(1,3,1,1)
+            sag_img = rearrange(prediction_input[idx*batch:(idx+1)*batch,:,:,:], 'd0 d1 d2 d3 -> d0 d1 d2 d3').repeat(1,3,1,1)
+            stacked_input = torch.vstack((axial_img, cor_img, sag_img))
+            prediction_axial[:,:,idx*batch:(idx+1)*batch] = rearrange(model(stacked_input.float())[0:batch].detach().cpu().numpy(), 'd0 d1 d2 d3 -> d2 d3 (d0 d1)')
+            prediction_cor[:,idx*batch:(idx+1)*batch,:] = rearrange(model(stacked_input.float())[batch:2*batch].detach().cpu().numpy(), 'd0 d1 d2 d3 -> d2 (d0 d1) d3')
+            prediction_sag[idx*batch:(idx+1)*batch,:,:] = rearrange(model(stacked_input.float())[2*batch::].detach().cpu().numpy(), 'd0 d1 d2 d3 -> (d0 d1) d2 d3')
+
         prediction = prediction_axial + prediction_cor + prediction_sag
 
     #saving images
@@ -83,12 +88,12 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
         out = rearrange(out, 'd0 d1 d2 -> d1 d2 d0')
         transform = tio.transforms.Resize((img_orig.get_fdata().shape[0], img_orig.get_fdata().shape[1], img_orig.get_fdata().shape[2]))
         out = transform(np.expand_dims(out,0))
-        out = np.squeeze(out)
+        out = reduceSize(np.squeeze(out))
         
     else:
         transform = tio.transforms.Resize((img_orig.get_fdata().shape[0], img_orig.get_fdata().shape[1], img_orig.get_fdata().shape[2]))
         out = transform(np.expand_dims(out, 0))
-        out = np.squeeze(out)
+        out = reduceSize(np.squeeze(out))
     
     nii_seg = nib.Nifti1Image(out, affine=img_orig.affine)
     nib.save(nii_seg, out_path)
