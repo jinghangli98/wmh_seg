@@ -1,7 +1,9 @@
 #!/bin/bash
 
 usage() {
-  echo "Usage: wmh_seg.sh -i <input_file> -o <output_file> [-g] [-pmb] [-v] [-b <batch_size>] [--fast]"
+  echo "Usage: wmh_seg -i <input_file> -o <output_file> [-g] [-pmb] [-v] [-b <batch_size>] [--fast]"
+  echo "Example: wmh_seg -i FLAIR.nii -o FLAIR_wmh.nii"
+  echo "Example: wmh_seg -i FLAIR.nii -o FLAIR_wmh.nii -g -v -b 4"
   exit 1
 }
 
