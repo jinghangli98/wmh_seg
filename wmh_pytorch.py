@@ -33,10 +33,12 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
         transform = tio.transforms.Resize((256,256,256))
         img = transform(img_orig)
         input = np.squeeze(img.get_fdata())
-        prediction = np.zeros((256,256,256))
         input = torch.tensor(input)
         affine = img.affine
         input = torch.unsqueeze(input, 1)
+        prediction_axial = np.zeros((256,256,256))
+        prediction_cor = np.zeros((256,256,256))
+        prediction_sag = np.zeros((256,256,256))
         
     else:
         img_orig = nib.load(in_path)
@@ -96,17 +98,9 @@ def wmh_seg(in_path, out_path, train_transforms, device, mode):
     else:
         img_fit = input.squeeze().detach().numpy()
     
-    if mode == "True":
-        out = rearrange(out, 'd0 d1 d2 -> d1 d2 d0')
-        out = rearrange(out, 'd0 d1 d2 -> d1 d2 d0')
-        transform = tio.transforms.Resize((img_orig.get_fdata().shape[0], img_orig.get_fdata().shape[1], img_orig.get_fdata().shape[2]))
-        out = transform(np.expand_dims(out,0))
-        out = reduceSize(np.squeeze(out))
-        
-    else:
-        transform = tio.transforms.Resize((img_orig.get_fdata().shape[0], img_orig.get_fdata().shape[1], img_orig.get_fdata().shape[2]))
-        out = transform(np.expand_dims(out, 0))
-        out = reduceSize(np.squeeze(out))
+    transform = tio.transforms.Resize((img_orig.get_fdata().shape[0], img_orig.get_fdata().shape[1], img_orig.get_fdata().shape[2]))
+    out = transform(np.expand_dims(out, 0))
+    out = reduceSize(np.squeeze(out))
     
     nii_seg = nib.Nifti1Image(out, affine=img_orig.affine)
     nib.save(nii_seg, out_path)
@@ -124,7 +118,7 @@ else:
     print('Configuring model on CPU')
 
 if pmb == "False":
-    train_transforms = transform = tio.transforms.Resize((256,256,256))
+    train_transforms = tio.transforms.Resize((256,256,256))
     
     model = torch.load(f"{wmh_seg_home}/ChallengeMatched_Unet_mit_b5.pth", map_location=device)
     model.eval()
@@ -132,13 +126,15 @@ if pmb == "False":
     wmh_seg(in_path, out_path, train_transforms, device, pmb)
     
 elif pmb == "True":
-    train_transforms = torchvision.transforms.Compose([ 
-                        torchvision.transforms.ToTensor(),
-                        torchvision.transforms.Resize((256, 256,)), 
-                        ])
+    # train_transforms = torchvision.transforms.Compose([ 
+    #                     torchvision.transforms.ToTensor(),
+    #                     torchvision.transforms.Resize((256, 256,)), 
+    #                     ])
+    train_transforms = tio.transforms.Resize((256,256,256))
     model = torch.load(f"{wmh_seg_home}/pmb_2d_transformer_Unet_mit_b5.pth", map_location=device)
     model.eval()
     model.to(device)
     wmh_seg(in_path, out_path, train_transforms, device, pmb)
+    
 
 
