@@ -51,3 +51,13 @@ wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
 ls *.nii | parallel --jobs 6 wmh_seg -i {} -o {.}_wmh.nii.gz -g
 ```
 This line of bash command would process all the .nii files on gpu in the current directory, 6 files at a time. (You might need to install GNU parallel)
+
+## Citation
+If you find this useful for your research, please use this bibtex to cite this repository:
+```
+@article{li2024wmh_seg,
+  title={wmh\_seg: Transformer based U-Net for Robust and Automatic White Matter Hyperintensity Segmentation across 1.5 T, 3T and 7T},
+  author={Li, Jinghang and Santini, Tales and Huang, Yuanzhe and Mettenburg, Joseph M and Ibrahima, Tamer S and Aizensteina, Howard J and Wu, Minjie},
+  journal={arXiv preprint arXiv:2402.12701},
+  year={2024}
+}
