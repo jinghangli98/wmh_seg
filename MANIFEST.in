@@ -1,4 +1,3 @@
 include LICENSE
 include README.md
 include wmh_seg/ChallengeMatched_Unet_mit_b5.pth
-include wmh_seg/unet-pmb_2d_transformer_Unet_mit_b5.pth
