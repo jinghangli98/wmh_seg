@@ -12,5 +12,5 @@ dependencies:
         - torchvision==0.12.0
         - nibabel
         - einops
-        - segmentation-models-pytorch==0.3.2
         - torchio
+        - segmentation-models-pytorch==0.3.2        
