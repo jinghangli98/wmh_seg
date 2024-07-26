@@ -57,7 +57,7 @@ If you find this useful for your research, please use this bibtex to cite this r
 ```
 @article{li2024wmh_seg,
   title={wmh\_seg: Transformer based U-Net for Robust and Automatic White Matter Hyperintensity Segmentation across 1.5 T, 3T and 7T},
-  author={Li, Jinghang and Santini, Tales and Huang, Yuanzhe and Mettenburg, Joseph M and Ibrahima, Tamer S and Aizensteina, Howard J and Wu, Minjie},
+  author={Li, Jinghang and Santini, Tales and Huang, Yuanzhe and Mettenburg, Joseph M and Ibrahim, Tamer S and Aizenstein, Howard J and Wu, Minjie},
   journal={arXiv preprint arXiv:2402.12701},
   year={2024}
 }
