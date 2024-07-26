@@ -7,7 +7,20 @@ An automatic white matter lesion segmentaion tool on T2 weighted Fluid Attenuate
 <img src="https://github.com/jinghangli98/wmh_seg/blob/main/comparision.png">
 </p>
 
-## Installation
+## PyPI Installation
+```
+pip install wmh_seg
+```
+### Python Example usage
+```python
+from wmh_seg import wmh_seg
+import nibael as nib
+nii = nib.load('/Users/jinghangli/Developer/wmh_seg/FLAIR.nii').get_fdata()
+wmh = wmh_seg(nii)
+slice = nii.get_fdata()[:,:,50]
+wmh_slice = wmh_seg(slice)
+```
+## CLI Installation
 
 ### Cloning repository and trained model
 ```bash
@@ -31,7 +44,7 @@ export PATH="$wmh_seg_home:$PATH"
 ```
 You can certainly add these two lines of code in your ~/.zshrc or ~/.bashrc files.
 
-## Example usage
+### CLI Example usage
 ```bash
 conda activate wmh
 wmh_seg -i PITT_001.nii.gz -o PITT_001_wmh.nii.gz -g
