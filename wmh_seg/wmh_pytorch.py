@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from einops import rearrange
 import torchio as tio
-from .model_loader import load_model
+from .model_loader import load_model, get_device
 
 def reduceSize(prediction):
     out = np.zeros(prediction.shape)
@@ -12,7 +12,7 @@ def reduceSize(prediction):
     return out
 
 def seg_3d(img_orig, verbose, fast, batch, model):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = get_device()
     train_transforms = tio.transforms.Resize((256, 256, 256))
 
     img_orig_arr = np.expand_dims(img_orig, 0)

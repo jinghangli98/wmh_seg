@@ -4,6 +4,13 @@ import torch
 
 _model_cache = {}
 
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device('cuda')
+    if torch.backends.mps.is_available():
+        return torch.device('mps')
+    return torch.device('cpu')
+
 def _get_cache_dir():
     cache = os.path.join(os.path.expanduser('~'), '.cache', 'wmh_seg')
     os.makedirs(cache, exist_ok=True)
@@ -38,7 +45,7 @@ def load_model(mode='wmh'):
     if mode in _model_cache:
         return _model_cache[mode]
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = get_device()
 
     if mode == 'wmh':
         model_path = pkg_resources.resource_filename('wmh_seg', 'ChallengeMatched_Unet_mit_b5.pth')

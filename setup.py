@@ -18,9 +18,11 @@ setup(
         'torchio',
         'numpy==1.26.4',
         'segmentation-models-pytorch==0.3.2',
-        'requests',
+        'huggingface_hub',
     ],
-    extras_require={
-        'hf': ['huggingface_hub'],
+    entry_points={
+        'console_scripts': [
+            'wmh_seg=wmh_seg.cli:main',
+        ],
     },
 )
