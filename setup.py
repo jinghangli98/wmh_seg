@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='wmh_seg',
-    version='0.1.0',
+    version='0.1.1',
     packages=find_packages(), 
     include_package_data=True,
     description='WMH segmentation for FLAIR images',
@@ -20,4 +20,7 @@ setup(
         'segmentation-models-pytorch==0.3.2',
         'requests',
     ],
+    extras_require={
+        'hf': ['huggingface_hub'],
+    },
 )
