@@ -10,34 +10,22 @@ def main():
         prog='wmh_seg',
         description='White matter hyperintensity segmentation for FLAIR images',
     )
-    parser.add_argument('input', help='Path to input FLAIR NIfTI (.nii/.nii.gz)')
-    parser.add_argument('output', help='Path for output segmentation NIfTI')
-    parser.add_argument(
-        '--mode', choices=['wmh', 'pmb'], default='wmh',
-        help='Segmentation model: wmh (default) or pmb (post-mortem brain)',
-    )
-    parser.add_argument(
-        '--fast', action='store_true',
-        help='Axial-only inference (faster, slightly less accurate)',
-    )
-    parser.add_argument(
-        '--batch', type=int, default=4, metavar='N',
-        help='Batch size for inference (default: 4)',
-    )
-    parser.add_argument(
-        '--no-progress', action='store_true',
-        help='Suppress progress bar',
-    )
+    parser.add_argument('-i', '--input', required=True, help='Path to input FLAIR NIfTI (.nii/.nii.gz)')
+    parser.add_argument('-o', '--output', required=True, help='Path for output segmentation NIfTI')
+    parser.add_argument('-p', '--pmb', action='store_true', help='Use post-mortem brain model')
+    parser.add_argument('--fast', action='store_true', help='Axial-only inference (faster, slightly less accurate)')
+    parser.add_argument('-b', '--batch', type=int, default=4, metavar='N', help='Batch size for inference (default: 4)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Show progress bar')
 
     args = parser.parse_args()
 
     img = nib.load(args.input)
     seg = wmh_seg(
         img,
-        verbose=not args.no_progress,
+        verbose=args.verbose,
         fast=args.fast,
         batch=args.batch,
-        mode=args.mode,
+        mode='pmb' if args.pmb else 'wmh',
     )
 
     nib.save(nib.Nifti1Image(seg.astype(np.uint8), affine=img.affine), args.output)
