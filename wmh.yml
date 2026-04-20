@@ -8,7 +8,7 @@ dependencies:
     - pillow
     - tqdm
     - pip:
-        - torch
+        - torch==2.5.0
         - torchvision
         - nibabel
         - einops

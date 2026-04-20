@@ -73,6 +73,11 @@ nib.save(nib.Nifti1Image(seg, affine=img.affine), 'output_wmh.nii.gz')
 
 ---
 
+### Docker usage example
+docker build -t wmh_seg .
+docker run -v $PWD:/data -w /data wmh_seg wmh_seg -i FLAIR.nii -o FLAIR_wmh.nii
+
+
 ## Citation
 If you find this useful for your research, please cite:
 ```bibtex
