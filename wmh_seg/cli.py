@@ -13,11 +13,25 @@ def main():
     parser.add_argument('-i', '--input', required=True, help='Path to input FLAIR NIfTI (.nii/.nii.gz)')
     parser.add_argument('-o', '--output', required=True, help='Path for output segmentation NIfTI')
     parser.add_argument('-p', '--pmb', action='store_true', help='Use post-mortem brain model')
+    parser.add_argument('--nnunet', action='store_true',
+                        help='Use the nnU-Net pmb model (requires --pmb)')
     parser.add_argument('--fast', action='store_true', help='Axial-only inference (faster, slightly less accurate)')
+    parser.add_argument('--compile', action='store_true',
+                        help='torch.compile the model before inference (slower first call, faster afterwards)')
     parser.add_argument('-b', '--batch', type=int, default=4, metavar='N', help='Batch size for inference (default: 4)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Show progress bar')
 
     args = parser.parse_args()
+
+    if args.nnunet and not args.pmb:
+        parser.error('--nnunet is only available for the pmb model; pass --pmb as well.')
+
+    # nnU-Net backend: reads/writes the file itself (handles spacing & geometry).
+    if args.nnunet:
+        from .nnunet_infer import nnunet_segment
+        nnunet_segment(args.input, args.output, verbose=args.verbose, compile=args.compile)
+        print(f'Saved segmentation to {args.output}')
+        return
 
     img = nib.load(args.input)
     seg = wmh_seg(
@@ -26,6 +40,7 @@ def main():
         fast=args.fast,
         batch=args.batch,
         mode='pmb' if args.pmb else 'wmh',
+        compile=args.compile,
     )
 
     nib.save(nib.Nifti1Image(seg.astype(np.uint8), affine=img.affine), args.output)

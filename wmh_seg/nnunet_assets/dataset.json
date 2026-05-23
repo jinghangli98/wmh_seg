@@ -1,0 +1,11 @@
+{
+    "channel_names": {
+        "0": "MRI"
+    },
+    "labels": {
+        "background": 0,
+        "WMH": 1
+    },
+    "numTraining": 87,
+    "file_ending": ".nii.gz"
+}

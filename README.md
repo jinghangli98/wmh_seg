@@ -24,7 +24,11 @@ wmh_seg -i FLAIR.nii.gz -o FLAIR_wmh.nii.gz
 
 ### Post-mortem brain segmentation
 ```bash
+# Default pmb model (2D transformer U-Net, multi-orientation)
 wmh_seg -i T1.nii.gz -o T1_wmh.nii.gz -p -v -b 4 --fast
+
+# nnU-Net pmb model (3d_fullres, 5-fold ensemble)
+wmh_seg -i T1.nii.gz -o T1_wmh.nii.gz --pmb --nnunet --compile
 ```
 
 ### All options
@@ -33,9 +37,10 @@ wmh_seg -i T1.nii.gz -o T1_wmh.nii.gz -p -v -b 4 --fast
 | `-i`, `--input` | Input FLAIR NIfTI path (`.nii` / `.nii.gz`) |
 | `-o`, `--output` | Output segmentation NIfTI path |
 | `-p`, `--pmb` | Use post-mortem brain model |
+| `--nnunet` | Use the nnU-Net pmb model instead of the default pmb model (requires `--pmb`) |
 | `-v`, `--verbose` | Show progress bar |
-| `-b`, `--batch N` | Batch size for inference (default: 4) |
-| `--fast` | Axial-only inference (faster, slightly less accurate) |
+| `-b`, `--batch N` | Batch size for inference (default: 4; ignored by `--nnunet`) |
+| `--fast` | Axial-only inference (faster, slightly less accurate; ignored by `--nnunet`) |
 
 ### Batch processing with GNU parallel
 ```bash

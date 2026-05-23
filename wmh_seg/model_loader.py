@@ -41,9 +41,10 @@ def _download_hf_model(filename, repo_id='jil202/wmh_seg'):
         print()
     return dest
 
-def load_model(mode='wmh'):
-    if mode in _model_cache:
-        return _model_cache[mode]
+def load_model(mode='wmh', compile=False):
+    cache_key = (mode, compile)
+    if cache_key in _model_cache:
+        return _model_cache[cache_key]
 
     device = get_device()
 
@@ -57,5 +58,10 @@ def load_model(mode='wmh'):
     model = torch.load(model_path, map_location=device, weights_only=False)
     model.eval()
     model.to(device)
-    _model_cache[mode] = model
+    if compile:
+        try:
+            model = torch.compile(model)
+        except Exception as e:
+            print(f'torch.compile failed ({e}); continuing without compilation.')
+    _model_cache[cache_key] = model
     return model

@@ -75,8 +75,8 @@ def seg_3d(img_orig, verbose, fast, batch, model):
     out = transform(np.expand_dims(out, 0))
     return reduceSize(np.squeeze(out))
 
-def wmh_seg(img_orig, verbose=True, fast=True, batch=4, mode='wmh'):
-    model = load_model(mode)
+def wmh_seg(img_orig, verbose=True, fast=True, batch=4, mode='wmh', compile=False):
+    model = load_model(mode, compile=compile)
 
     if isinstance(img_orig, nib.Nifti1Image):
         img_orig = np.squeeze(img_orig.get_fdata())
