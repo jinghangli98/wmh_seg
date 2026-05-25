@@ -7,12 +7,12 @@ preprocessing (normalization, resampling, sliding-window inference) and writes
 the prediction back in your input's geometry, so no manual preprocessing is
 needed. Pick a model with a flag:
 
-| Flag | Model | Trained on |
-|------|-------|------------|
-| `--invivo` *(default)* | `Dataset002_WMHinvivo` | in-vivo (challenge FLAIR/T1 + COV-IBR/IBR-SVD FLAIR) |
-| `--exvivo` | `Dataset003_WMHexvivo` | ex-vivo (T1/T2/GRE) |
-| `--unified` | `Dataset001_WMH` | both in-vivo and ex-vivo (contrast-agnostic generalist) |
-| `--invivo --legacy` | transformer U-Net | the original FLAIR model (kept for compatibility) |
+| Flag | Trained on |
+|------|------------|
+| `--invivo` *(default)*  | in-vivo 1.5T, 3T, 7T (T1w MPRAGE, T2w FLAIR) |
+| `--exvivo` | ex-vivo 7T (MP2RAGE, T2wSPC, GRE) |
+| `--unified` | both in-vivo and ex-vivo (contrast-agnostic generalist) |
+| `--invivo --legacy` | the original FLAIR model (kept for compatibility) |
 
 Each nnU-Net model is a `3d_fullres` 5-fold ensemble. The legacy transformer was
 trained on more than 300 FLAIR scans at 1.5T, 3T and 7T from the University of
