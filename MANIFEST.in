@@ -1,5 +1,4 @@
 include LICENSE
 include README.md
 include wmh_seg/ChallengeMatched_Unet_mit_b5.pth
-include wmh_seg/nnunet_assets/dataset.json
-include wmh_seg/nnunet_assets/plans.json
+recursive-include wmh_seg/nnunet_assets *.json

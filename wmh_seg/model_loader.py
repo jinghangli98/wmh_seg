@@ -49,7 +49,7 @@ def load_model(mode='wmh', compile=False):
     device = get_device()
 
     if mode == 'wmh':
-        model_path = pkg_resources.resource_filename('wmh_seg', 'ChallengeMatched_Unet_mit_b5.pth')
+        model_path = _download_hf_model('ChallengeMatched_Unet_mit_b5.pth')
     elif mode == 'pmb':
         model_path = _download_hf_model('pmb_2d_transformer_Unet_mit_b5.pth')
     else:

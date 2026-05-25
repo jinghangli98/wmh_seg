@@ -1,32 +1,72 @@
-"""nnU-Net (v2) inference backend for the post-mortem brain (pmb) WMH model.
+"""nnU-Net (v2) inference backend for the wmh_seg models.
 
-This wraps the trained nnUNetv2 model (Dataset011_WMH, 3d_fullres, 5-fold
-ensemble) behind a simple file-in/file-out call so it can be driven from the
-``wmh_seg`` CLI without touching nnU-Net's own command line tools.
+Several nnU-Net models share this backend:
 
-The 5 fold checkpoints are distributed as flat files on Hugging Face
-(``pmb_nnunet_checkpoint_final_<fold>.pth`` in the jil202/wmh_seg repo) and are
-downloaded + cached on first use. nnU-Net's loader expects a model *folder*
-laid out as ``<dir>/{dataset.json,plans.json,fold_<i>/checkpoint_final.pth}``,
-so we reconstruct that layout in a local cache, pairing the downloaded
-checkpoints with the dataset.json/plans.json bundled in this package.
+* ``invivo`` (default) -- Dataset002_WMHinvivo, dedicated to in-vivo scans
+  (challenge FLAIR/T1 + COV-IBR/IBR-SVD FLAIR).
+* ``exvivo`` -- Dataset003_WMHexvivo, dedicated to ex-vivo scans (T1/T2/GRE).
+* ``unified`` -- Dataset001_WMH, the contrast-agnostic generalist trained on
+  both in-vivo and ex-vivo data.
+* ``pmb`` -- legacy ex-vivo nnU-Net (Dataset011_WMH); superseded by ``exvivo``
+  and not exposed on the CLI, but still reachable from the Python API.
 
-Set ``WMH_SEG_NNUNET_DIR`` to an existing nnU-Net model folder to bypass the
-download entirely (useful for development / offline use / custom weights).
+Each is single-channel, so you feed exactly one image of whatever contrast you
+have. All are 3d_fullres 5-fold ensembles. nnU-Net's loader expects a model
+*folder* laid out as ``<dir>/{dataset.json,plans.json,fold_<i>/checkpoint_final.pth}``.
+The fold checkpoints are distributed as flat files on Hugging Face
+(``checkpoint_final_{fold}_{model}.pth`` in the jil202/wmh_seg repo) and are
+downloaded + cached on first use; we pair them with the dataset.json/plans.json
+bundled in this package (which always match the uploaded weights) to rebuild
+that folder under ``~/.cache/wmh_seg``.
+
+Set a model's env var (see ``MODELS`` below) to an existing nnU-Net model folder
+to bypass the download -- useful for development, offline use, or custom weights.
 """
 import os
 import shutil
+import tempfile
 
+import nibabel as nib
 import pkg_resources
 
-# Hugging Face repo + flat checkpoint naming used at upload time.
 HF_REPO_ID = 'jil202/wmh_seg'
-CHECKPOINT_TEMPLATE = 'pmb_nnunet_checkpoint_final_{fold}.pth'
-ALL_FOLDS = (0, 1, 2, 3, 4)
 CHECKPOINT_NAME = 'checkpoint_final.pth'  # name nnU-Net expects inside each fold dir
+DEFAULT_MODEL = 'invivo'
 
-# Cache the initialized predictor per fold-selection so repeated calls in one
-# process don't reload five networks from disk.
+# Registry of nnU-Net models. Each entry knows where its bundled configs live,
+# how its fold checkpoints are named on Hugging Face, and which env var lets a
+# user point at a pre-existing local model folder instead of downloading.
+MODELS = {
+    'invivo': {
+        'assets_subdir': 'invivo',
+        'checkpoint_template': 'checkpoint_final_{fold}_invivo.pth',
+        'env_var': 'WMH_SEG_INVIVO_DIR',
+        'folds': (0, 1, 2, 3, 4),
+    },
+    'exvivo': {
+        'assets_subdir': 'exvivo',
+        'checkpoint_template': 'checkpoint_final_{fold}_exvivo.pth',
+        'env_var': 'WMH_SEG_EXVIVO_DIR',
+        'folds': (0, 1, 2, 3, 4),
+    },
+    'unified': {
+        'assets_subdir': 'unified',
+        'checkpoint_template': 'checkpoint_final_{fold}_unified.pth',
+        'env_var': 'WMH_SEG_UNIFIED_DIR',
+        'folds': (0, 1, 2, 3, 4),
+    },
+    # Legacy ex-vivo nnU-Net (Dataset011). Superseded by the dedicated 'exvivo'
+    # model and no longer exposed on the CLI, but kept for the Python API.
+    'pmb': {
+        'assets_subdir': 'pmb',
+        'checkpoint_template': 'pmb_nnunet_checkpoint_final_{fold}.pth',
+        'env_var': 'WMH_SEG_NNUNET_DIR',
+        'folds': (0, 1, 2, 3, 4),
+    },
+}
+
+# Cache the initialized predictor per (model, fold-selection, compile) so
+# repeated calls in one process don't reload the networks from disk.
 _predictor_cache = {}
 
 
@@ -36,23 +76,23 @@ def _import_nnunet():
         from nnunetv2.imageio.simpleitk_reader_writer import SimpleITKIO
     except ImportError as e:
         raise ImportError(
-            'The --nnunet backend requires nnunetv2. Install it with:\n'
-            '    pip install "wmh_seg[nnunet]"\n'
-            'or\n'
+            'The nnU-Net backend requires nnunetv2. Install it with:\n'
             '    pip install nnunetv2'
         ) from e
     return nnUNetPredictor, SimpleITKIO
 
 
-def _cache_dir():
-    d = os.path.join(os.path.expanduser('~'), '.cache', 'wmh_seg', 'nnunet_pmb_model')
+def _cache_dir(model):
+    d = os.path.join(os.path.expanduser('~'), '.cache', 'wmh_seg', f'nnunet_{model}_model')
     os.makedirs(d, exist_ok=True)
     return d
 
 
-def _bundled_asset(name):
-    """Absolute path to a config file bundled in the package."""
-    return pkg_resources.resource_filename('wmh_seg', os.path.join('nnunet_assets', name))
+def _bundled_asset(model, name):
+    """Absolute path to a config file bundled in the package for ``model``."""
+    subdir = MODELS[model]['assets_subdir']
+    return pkg_resources.resource_filename(
+        'wmh_seg', os.path.join('nnunet_assets', subdir, name))
 
 
 def _link_or_copy(src, dst):
@@ -64,37 +104,41 @@ def _link_or_copy(src, dst):
         shutil.copy(src, dst)
 
 
-def _build_model_folder(folds):
+def _build_model_folder(model, folds):
     """Download checkpoints from HF and assemble the folder nnU-Net expects."""
     from huggingface_hub import hf_hub_download
 
-    model_dir = _cache_dir()
+    spec = MODELS[model]
+    model_dir = _cache_dir(model)
     # Configs travel with the package so they always match this model version.
     for cfg in ('dataset.json', 'plans.json'):
-        shutil.copy(_bundled_asset(cfg), os.path.join(model_dir, cfg))
+        shutil.copy(_bundled_asset(model, cfg), os.path.join(model_dir, cfg))
 
-    print(f'Fetching nnU-Net pmb checkpoints from {HF_REPO_ID} (cached after first run)...')
+    print(f'Fetching nnU-Net {model} checkpoints from {HF_REPO_ID} (cached after first run)...')
     for f in folds:
         ckpt = hf_hub_download(repo_id=HF_REPO_ID,
-                               filename=CHECKPOINT_TEMPLATE.format(fold=f))
+                               filename=spec['checkpoint_template'].format(fold=f))
         fold_dir = os.path.join(model_dir, f'fold_{f}')
         os.makedirs(fold_dir, exist_ok=True)
         _link_or_copy(ckpt, os.path.join(fold_dir, CHECKPOINT_NAME))
     return model_dir
 
 
-def _resolve_model_folder(folds):
-    override = os.environ.get('WMH_SEG_NNUNET_DIR')
+def _resolve_model_folder(model, folds):
+    override = os.environ.get(MODELS[model]['env_var'])
     if override:
         if not os.path.isdir(override):
-            raise FileNotFoundError(f'WMH_SEG_NNUNET_DIR={override!r} is not a directory.')
+            raise FileNotFoundError(
+                f"{MODELS[model]['env_var']}={override!r} is not a directory.")
         return override
-    return _build_model_folder(folds)
+    return _build_model_folder(model, folds)
 
 
-def _get_predictor(folds=ALL_FOLDS, compile=False):
+def _get_predictor(model=DEFAULT_MODEL, folds=None, compile=False):
+    if folds is None:
+        folds = MODELS[model]['folds']
     folds = tuple(folds)
-    cache_key = (folds, compile)
+    cache_key = (model, folds, compile)
     if cache_key in _predictor_cache:
         return _predictor_cache[cache_key]
 
@@ -118,7 +162,7 @@ def _get_predictor(folds=ALL_FOLDS, compile=False):
         allow_tqdm=True,
     )
     predictor.initialize_from_trained_model_folder(
-        _resolve_model_folder(folds),
+        _resolve_model_folder(model, folds),
         use_folds=folds,
         checkpoint_name=CHECKPOINT_NAME,
     )
@@ -126,21 +170,55 @@ def _get_predictor(folds=ALL_FOLDS, compile=False):
     return predictor
 
 
-def nnunet_segment(input_path, output_path, folds=ALL_FOLDS, verbose=False, compile=False):
-    """Segment WMH from a single NIfTI using the nnU-Net pmb model.
+def nnunet_segment(input_path, output_path, model=DEFAULT_MODEL, folds=None,
+                   verbose=False, compile=False, reorient=True):
+    """Segment WMH from a single NIfTI using an nnU-Net model.
 
-    nnU-Net reads the image with SimpleITK (handling spacing/orientation),
-    runs preprocessing + sliding-window inference over the 5-fold ensemble,
-    resamples the prediction back to the input geometry, and writes a uint8
-    label map (0=bg, 1=WMH) to ``output_path``.
+    nnU-Net reads the image with SimpleITK, runs preprocessing + sliding-window
+    inference over the fold ensemble, resamples the prediction back to the input
+    geometry, and writes a uint8 label map (0=bg, 1=WMH) to ``output_path``.
+
+    Parameters
+    ----------
+    input_path, output_path : str
+        Single-image input NIfTI and destination for the label map.
+    model : {'invivo', 'exvivo', 'unified', 'pmb'}
+        Which nnU-Net model to run. ``'invivo'`` (default) and ``'exvivo'`` are
+        the dedicated models, ``'unified'`` is the contrast-agnostic generalist,
+        and ``'pmb'`` is the legacy ex-vivo model.
+    folds : iterable[int] or None
+        Fold subset for the ensemble. ``None`` uses all of the model's folds.
+    reorient : bool
+        Reorient the input to canonical RAS before inference and map the mask
+        back to the input's original orientation afterwards (default True).
     """
+    if model not in MODELS:
+        raise ValueError(f"Unknown nnU-Net model {model!r}; choose from {sorted(MODELS)}.")
     _, SimpleITKIO = _import_nnunet()
-    predictor = _get_predictor(folds, compile=compile)
-
+    predictor = _get_predictor(model, folds, compile=compile)
     io = SimpleITKIO()
-    img, props = io.read_images([input_path])
-    if verbose:
-        print('Predicting.....')
-    seg = predictor.predict_single_npy_array(img, props, None, None, False)
-    io.write_seg(seg, output_path, props)
+
+    def _predict(path, dst):
+        img, props = io.read_images([path])
+        if verbose:
+            print('Predicting.....')
+        seg = predictor.predict_single_npy_array(img, props, None, None, False)
+        io.write_seg(seg, dst, props)
+
+    if not reorient:
+        _predict(input_path, output_path)
+        return output_path
+
+    # Reorient to canonical RAS, infer, then map the mask back to the original
+    # orientation so it overlays on the source scan. See orientation.py.
+    from .orientation import to_ras, restore_orientation
+    orig_img = nib.load(input_path)
+    ras_img = to_ras(orig_img)
+    with tempfile.TemporaryDirectory(prefix='wmh_seg_') as tmp:
+        ras_in = os.path.join(tmp, 'input_0000.nii.gz')
+        nib.save(ras_img, ras_in)
+        ras_seg = os.path.join(tmp, 'seg.nii.gz')
+        _predict(ras_in, ras_seg)
+        mask = nib.load(ras_seg)
+        restore_orientation(mask.dataobj, ras_img, orig_img).to_filename(output_path)
     return output_path

@@ -1,0 +1,13 @@
+{
+    "channel_names": {
+        "0": "MR"
+    },
+    "labels": {
+        "background": 0,
+        "wmh": 1
+    },
+    "numTraining": 571,
+    "file_ending": ".nii.gz",
+    "name": "Dataset001_WMH",
+    "description": "Contrast-agnostic WMH segmentation (invivo FLAIR/T1 + exvivo T1/T2/GRE)."
+}

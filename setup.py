@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name='wmh_seg',
-    version='0.1.5',
+    version='1.6.0',
     packages=find_packages(),
     include_package_data=True,
-    package_data={'wmh_seg': ['nnunet_assets/*.json']},
+    package_data={'wmh_seg': ['nnunet_assets/*/*.json']},
     description='WMH segmentation for FLAIR images',
     author='Jinghang Li',
     author_email='jinghang.li@pitt.edu',

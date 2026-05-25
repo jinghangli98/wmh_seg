@@ -1,5 +1,24 @@
 # wmh_seg
-An automatic white matter lesion segmentation tool for T2-weighted Fluid Attenuated Inverse Recovery (FLAIR) images. The model was trained using more than 300 FLAIR scans at 1.5T, 3T and 7T, including images from University of Pittsburgh, UMC Utrecht, NUHS Singapore, and VU Amsterdam. Data augmentation was implemented using [torchio](https://torchio.readthedocs.io/transforms/transforms.html). `wmh_seg` shows reliable results on par with FreeSurfer white matter lesion segmentations on T1-weighted images. No additional preprocessing is needed.
+An automatic white matter lesion / hyperintensity segmentation tool.
+
+`wmh_seg` runs nnU-Net v2 models that each take a **single input image of any
+one contrast** (FLAIR, T1, T2 or GRE) — feed whatever you have. nnU-Net handles
+preprocessing (normalization, resampling, sliding-window inference) and writes
+the prediction back in your input's geometry, so no manual preprocessing is
+needed. Pick a model with a flag:
+
+| Flag | Model | Trained on |
+|------|-------|------------|
+| `--invivo` *(default)* | `Dataset002_WMHinvivo` | in-vivo (challenge FLAIR/T1 + COV-IBR/IBR-SVD FLAIR) |
+| `--exvivo` | `Dataset003_WMHexvivo` | ex-vivo (T1/T2/GRE) |
+| `--unified` | `Dataset001_WMH` | both in-vivo and ex-vivo (contrast-agnostic generalist) |
+| `--invivo --legacy` | transformer U-Net | the original FLAIR model (kept for compatibility) |
+
+Each nnU-Net model is a `3d_fullres` 5-fold ensemble. The legacy transformer was
+trained on more than 300 FLAIR scans at 1.5T, 3T and 7T from the University of
+Pittsburgh, UMC Utrecht, NUHS Singapore, and VU Amsterdam, with
+[torchio](https://torchio.readthedocs.io/transforms/transforms.html) data
+augmentation, and shows reliable results on par with FreeSurfer.
 
 <p align="center">
 <img src="https://github.com/jinghangli98/wmh_seg/blob/main/dataAugmentation.png" width=80% height=80%>
@@ -12,6 +31,15 @@ An automatic white matter lesion segmentation tool for T2-weighted Fluid Attenua
 pip install wmh_seg
 ```
 GPU (CUDA/MPS) is used automatically if available, otherwise falls back to CPU.
+nnU-Net inference is much faster on a GPU; the 5-fold ensemble is slow on CPU
+(use `--folds 0` to run a single fold if needed).
+
+The first run of a given model downloads its 5 fold checkpoints (~1.2 GB total)
+from [Hugging Face](https://huggingface.co/jil202/wmh_seg) and caches them in
+`~/.cache/wmh_seg`. To use a local nnU-Net model folder instead (and skip the
+download), set the model's env var to a folder containing `dataset.json`,
+`plans.json`, and `fold_<i>/checkpoint_final.pth`:
+`WMH_SEG_INVIVO_DIR`, `WMH_SEG_EXVIVO_DIR`, or `WMH_SEG_UNIFIED_DIR`.
 
 ---
 
@@ -19,28 +47,45 @@ GPU (CUDA/MPS) is used automatically if available, otherwise falls back to CPU.
 
 ### Basic WMH segmentation
 ```bash
-wmh_seg -i FLAIR.nii.gz -o FLAIR_wmh.nii.gz
-```
+# In-vivo (default) — also the bare command with no model flag
+wmh_seg -i invivo.nii.gz -o wmh.nii.gz --invivo -v
 
-### Post-mortem brain segmentation
-```bash
-# Default pmb model (2D transformer U-Net, multi-orientation)
-wmh_seg -i T1.nii.gz -o T1_wmh.nii.gz -p -v -b 4 --fast
+# Ex-vivo
+wmh_seg -i exvivo.nii.gz -o wmh.nii.gz --exvivo -v
 
-# nnU-Net pmb model (3d_fullres, 5-fold ensemble)
-wmh_seg -i T1.nii.gz -o T1_wmh.nii.gz --pmb --nnunet --compile
+# Unified generalist (handles either in-vivo or ex-vivo)
+wmh_seg -i scan.nii.gz   -o wmh.nii.gz --unified -v
+
+# Legacy in-vivo transformer model
+wmh_seg -i invivo.nii.gz -o wmh.nii.gz --invivo --legacy -v
+
+# Speed knobs: a single fold instead of the 5-fold ensemble, optional compile
+wmh_seg -i scan.nii.gz -o wmh.nii.gz --folds 0
+wmh_seg -i scan.nii.gz -o wmh.nii.gz --compile -v
 ```
+Every input is reoriented to canonical **RAS** before inference and the mask is
+mapped back to the input's original orientation, so results don't depend on how
+the image was stored on disk. Pass `--no-reorient` to skip this.
 
 ### All options
 | Flag | Description |
 |------|-------------|
-| `-i`, `--input` | Input FLAIR NIfTI path (`.nii` / `.nii.gz`) |
+| `-i`, `--input` | Input NIfTI path (`.nii` / `.nii.gz`) |
 | `-o`, `--output` | Output segmentation NIfTI path |
-| `-p`, `--pmb` | Use post-mortem brain model |
-| `--nnunet` | Use the nnU-Net pmb model instead of the default pmb model (requires `--pmb`) |
+| `--invivo` | Dedicated in-vivo nnU-Net model (**default**) |
+| `--exvivo` | Dedicated ex-vivo nnU-Net model |
+| `--unified` | Unified contrast-agnostic nnU-Net model |
+| `--legacy` | Legacy in-vivo transformer model (only valid with `--invivo`) |
+| `-f`, `--folds N [N ...]` | nnU-Net fold(s) to ensemble (default: all 5) |
+| `--compile` | `torch.compile` the model (slower first call, faster afterwards) |
+| `--no-reorient` | Skip RAS reorientation (infer in the input's stored orientation) |
 | `-v`, `--verbose` | Show progress bar |
-| `-b`, `--batch N` | Batch size for inference (default: 4; ignored by `--nnunet`) |
-| `--fast` | Axial-only inference (faster, slightly less accurate; ignored by `--nnunet`) |
+| `-b`, `--batch N` | *(legacy)* Batch size for the transformer model (default: 4) |
+| `--fast` | *(legacy)* Axial-only inference (faster, slightly less accurate) |
+
+`--invivo`, `--exvivo`, and `--unified` are mutually exclusive. `--legacy` only
+applies to the in-vivo model (`--legacy` on its own is equivalent to
+`--invivo --legacy`, since in-vivo is the default).
 
 ### Batch processing with GNU parallel
 ```bash
@@ -51,27 +96,35 @@ ls *.nii.gz | parallel --jobs 4 wmh_seg -i {} -o {.}_wmh.nii.gz -v
 
 ## Python API
 
+### nnU-Net models (file in, file out)
+nnU-Net reads/writes NIfTI itself (to preserve spacing & geometry), so this
+entry point is path-based:
+```python
+from wmh_seg import nnunet_segment
+
+# model='invivo' (default) | 'exvivo' | 'unified'; folds=None uses all 5
+nnunet_segment('scan.nii.gz', 'scan_wmh.nii.gz', verbose=True)
+nnunet_segment('scan.nii.gz', 'scan_wmh.nii.gz', model='exvivo')
+nnunet_segment('scan.nii.gz', 'scan_wmh.nii.gz', model='unified', folds=[0], compile=True)
+```
+Inputs are reoriented to RAS before inference and the mask is mapped back to the
+input's orientation; pass `reorient=False` to disable.
+
+### Legacy in-vivo transformer model (in-memory array)
 ```python
 import nibabel as nib
 from wmh_seg import wmh_seg
 
 img = nib.load('FLAIR.nii.gz')
-
-# Standard WMH segmentation
-seg = wmh_seg(img)
-
-# Post-mortem brain segmentation
-seg = wmh_seg(img, mode='pmb', verbose=True, fast=True, batch=4)
-
-# Save result
+seg = wmh_seg(img, verbose=True, fast=True, batch=4)   # mode='wmh' (legacy in-vivo)
 nib.save(nib.Nifti1Image(seg, affine=img.affine), 'output_wmh.nii.gz')
 ```
 
-### `wmh_seg()` parameters
+### `wmh_seg()` parameters (legacy transformer model)
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `img_orig` | `Nifti1Image` or `np.ndarray` | — | Input FLAIR image |
-| `mode` | `'wmh'` \| `'pmb'` | `'wmh'` | Model to use |
+| `mode` | `'wmh'` | `'wmh'` | Legacy in-vivo transformer |
 | `verbose` | `bool` | `True` | Show progress bar |
 | `fast` | `bool` | `True` | Axial-only inference |
 | `batch` | `int` | `4` | Inference batch size |
