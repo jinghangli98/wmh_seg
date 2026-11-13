@@ -25,9 +25,10 @@ to bypass the download -- useful for development, offline use, or custom weights
 import os
 import shutil
 import tempfile
+from importlib import resources
 
 import nibabel as nib
-import pkg_resources
+import torch
 
 HF_REPO_ID = 'jil202/wmh_seg'
 CHECKPOINT_NAME = 'checkpoint_final.pth'  # name nnU-Net expects inside each fold dir
@@ -71,6 +72,14 @@ _predictor_cache = {}
 
 
 def _import_nnunet():
+    # nnunetv2 prints three warnings at import when its training/preprocessing
+    # folders are not configured. Inference needs none of them, so point them
+    # at a scratch folder unless the user has set them.
+    scratch = os.path.join(os.path.expanduser('~'), '.cache', 'wmh_seg', 'nnunet_paths')
+    for var in ('nnUNet_raw', 'nnUNet_preprocessed', 'nnUNet_results'):
+        if not os.environ.get(var):
+            os.makedirs(scratch, exist_ok=True)
+            os.environ[var] = scratch
     try:
         from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
         from nnunetv2.imageio.simpleitk_reader_writer import SimpleITKIO
@@ -89,10 +98,8 @@ def _cache_dir(model):
 
 
 def _bundled_asset(model, name):
-    """Absolute path to a config file bundled in the package for ``model``."""
-    subdir = MODELS[model]['assets_subdir']
-    return pkg_resources.resource_filename(
-        'wmh_seg', os.path.join('nnunet_assets', subdir, name))
+    """The config file bundled in the package for ``model`` (an importlib.resources handle)."""
+    return resources.files('wmh_seg').joinpath('nnunet_assets', MODELS[model]['assets_subdir'], name)
 
 
 def _link_or_copy(src, dst):
@@ -112,7 +119,8 @@ def _build_model_folder(model, folds):
     model_dir = _cache_dir(model)
     # Configs travel with the package so they always match this model version.
     for cfg in ('dataset.json', 'plans.json'):
-        shutil.copy(_bundled_asset(model, cfg), os.path.join(model_dir, cfg))
+        with open(os.path.join(model_dir, cfg), 'wb') as fh:
+            fh.write(_bundled_asset(model, cfg).read_bytes())
 
     print(f'Fetching nnU-Net {model} checkpoints from {HF_REPO_ID} (cached after first run)...')
     for f in folds:
@@ -134,11 +142,11 @@ def _resolve_model_folder(model, folds):
     return _build_model_folder(model, folds)
 
 
-def _get_predictor(model=DEFAULT_MODEL, folds=None, compile=False):
+def _get_predictor(model=DEFAULT_MODEL, folds=None, compile=False, mirroring=True):
     if folds is None:
         folds = MODELS[model]['folds']
     folds = tuple(folds)
-    cache_key = (model, folds, compile)
+    cache_key = (model, folds, compile, mirroring)
     if cache_key in _predictor_cache:
         return _predictor_cache[cache_key]
 
@@ -154,7 +162,7 @@ def _get_predictor(model=DEFAULT_MODEL, folds=None, compile=False):
     predictor = nnUNetPredictor(
         tile_step_size=0.5,
         use_gaussian=True,
-        use_mirroring=True,
+        use_mirroring=mirroring,
         perform_everything_on_device=(device.type == 'cuda'),
         device=device,
         verbose=False,
@@ -166,12 +174,22 @@ def _get_predictor(model=DEFAULT_MODEL, folds=None, compile=False):
         use_folds=folds,
         checkpoint_name=CHECKPOINT_NAME,
     )
+    if device.type == 'cuda':
+        # nnU-Net runs the network under fp16 autocast. On recent torch/cuDNN/GPU
+        # combinations an fp16 3D convolution in the default NCDHW layout takes a
+        # fallback kernel that unfolds its input: one full-resolution layer of
+        # this U-Net then needs several GB and ~20x the time of the cuDNN kernel.
+        # Channels-last weights steer every convolution onto the proper kernel
+        # (measured: 1.3 s -> 0.2 s and 9.5 GB -> 1.4 GB per patch, same output).
+        # nnU-Net's per-fold load_state_dict copies into these tensors, so the
+        # layout survives fold switching.
+        predictor.network.to(memory_format=torch.channels_last_3d)
     _predictor_cache[cache_key] = predictor
     return predictor
 
 
 def nnunet_segment(input_path, output_path, model=DEFAULT_MODEL, folds=None,
-                   verbose=False, compile=False, reorient=True):
+                   verbose=False, compile=False, reorient=True, mirroring=True):
     """Segment WMH from a single NIfTI using an nnU-Net model.
 
     nnU-Net reads the image with SimpleITK, runs preprocessing + sliding-window
@@ -191,11 +209,15 @@ def nnunet_segment(input_path, output_path, model=DEFAULT_MODEL, folds=None,
     reorient : bool
         Reorient the input to canonical RAS before inference and map the mask
         back to the input's original orientation afterwards (default True).
+    mirroring : bool
+        Test-time augmentation: average the prediction over the 8 axis flips of
+        every patch (default True). Turning it off makes inference about 8x
+        faster at a small cost in accuracy.
     """
     if model not in MODELS:
         raise ValueError(f"Unknown nnU-Net model {model!r}; choose from {sorted(MODELS)}.")
     _, SimpleITKIO = _import_nnunet()
-    predictor = _get_predictor(model, folds, compile=compile)
+    predictor = _get_predictor(model, folds, compile=compile, mirroring=mirroring)
     io = SimpleITKIO()
 
     def _predict(path, dst):

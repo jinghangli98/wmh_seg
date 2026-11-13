@@ -35,6 +35,9 @@ def main():
     parser.add_argument('-f', '--folds', type=int, nargs='+', metavar='N', default=None,
                         help='nnU-Net fold(s) to ensemble (default: all 5). Fewer folds = '
                              'faster, slightly less accurate.')
+    parser.add_argument('--no-mirroring', dest='mirroring', action='store_false',
+                        help='Skip test-time mirroring (the 8 axis flips of every patch): '
+                             'about 8x faster, slightly less accurate.')
     parser.add_argument('--compile', action='store_true',
                         help='torch.compile the model before inference '
                              '(slower first call, faster afterwards)')
@@ -87,7 +90,8 @@ def main():
     # --- nnU-Net models: invivo (default) / exvivo / unified -----------------
     from .nnunet_infer import nnunet_segment
     nnunet_segment(args.input, args.output, model=domain, folds=args.folds,
-                   verbose=args.verbose, compile=args.compile, reorient=args.reorient)
+                   verbose=args.verbose, compile=args.compile, reorient=args.reorient,
+                   mirroring=args.mirroring)
     print(f'Saved segmentation to {args.output}')
 
 

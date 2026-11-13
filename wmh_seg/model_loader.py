@@ -1,11 +1,19 @@
 import os
-import pkg_resources
 import torch
 
 _model_cache = {}
 
 def get_device():
     if torch.cuda.is_available():
+        # Let the CUDA caching allocator grow segments instead of reserving a new
+        # block for every differently sized request. nnU-Net's sliding window
+        # otherwise fragments the cache to well above its real peak, and on
+        # Windows/WSL that excess silently spills into system memory and
+        # inference crawls instead of failing. Harmless when already set.
+        try:
+            torch.cuda.memory._set_allocator_settings('expandable_segments:True')
+        except Exception:
+            pass
         return torch.device('cuda')
     if torch.backends.mps.is_available():
         return torch.device('mps')

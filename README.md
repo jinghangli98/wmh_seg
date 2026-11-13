@@ -34,6 +34,12 @@ GPU (CUDA/MPS) is used automatically if available, otherwise falls back to CPU.
 nnU-Net inference is much faster on a GPU; the 5-fold ensemble is slow on CPU
 (use `--folds 0` to run a single fold if needed).
 
+GPU memory: inference peaks at about 3 GB for a 0.37 mm ex-vivo T1 of
+228 x 514 x 400 voxels, so an 8 GB card is enough. On that volume with an
+RTX 5070 the full 5-fold ensemble with test-time mirroring takes about 5 min;
+`--folds 0 --no-mirroring` takes about 12 s and agrees with the full ensemble
+at a Dice of 0.93.
+
 The first run of a given model downloads its 5 fold checkpoints (~1.2 GB total)
 from [Hugging Face](https://huggingface.co/jil202/wmh_seg) and caches them in
 `~/.cache/wmh_seg`. To use a local nnU-Net model folder instead (and skip the
@@ -59,8 +65,10 @@ wmh_seg -i scan.nii.gz   -o wmh.nii.gz --unified -v
 # Legacy in-vivo transformer model
 wmh_seg -i invivo.nii.gz -o wmh.nii.gz --invivo --legacy -v
 
-# Speed knobs: a single fold instead of the 5-fold ensemble, optional compile
+# Speed knobs: a single fold instead of the 5-fold ensemble, no test-time
+# mirroring, optional compile
 wmh_seg -i scan.nii.gz -o wmh.nii.gz --folds 0
+wmh_seg -i scan.nii.gz -o wmh.nii.gz --folds 0 --no-mirroring
 wmh_seg -i scan.nii.gz -o wmh.nii.gz --compile -v
 ```
 Every input is reoriented to canonical **RAS** before inference and the mask is
@@ -77,6 +85,7 @@ the image was stored on disk. Pass `--no-reorient` to skip this.
 | `--unified` | Unified contrast-agnostic nnU-Net model |
 | `--legacy` | Legacy in-vivo transformer model (only valid with `--invivo`) |
 | `-f`, `--folds N [N ...]` | nnU-Net fold(s) to ensemble (default: all 5) |
+| `--no-mirroring` | Skip test-time mirroring (the 8 axis flips of every patch): ~8x faster, slightly less accurate |
 | `--compile` | `torch.compile` the model (slower first call, faster afterwards) |
 | `--no-reorient` | Skip RAS reorientation (infer in the input's stored orientation) |
 | `-v`, `--verbose` | Show progress bar |
@@ -106,6 +115,7 @@ from wmh_seg import nnunet_segment
 nnunet_segment('scan.nii.gz', 'scan_wmh.nii.gz', verbose=True)
 nnunet_segment('scan.nii.gz', 'scan_wmh.nii.gz', model='exvivo')
 nnunet_segment('scan.nii.gz', 'scan_wmh.nii.gz', model='unified', folds=[0], compile=True)
+nnunet_segment('scan.nii.gz', 'scan_wmh.nii.gz', model='exvivo', folds=[0], mirroring=False)  # fastest
 ```
 Inputs are reoriented to RAS before inference and the mask is mapped back to the
 input's orientation; pass `reorient=False` to disable.

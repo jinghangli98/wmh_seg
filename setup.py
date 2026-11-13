@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='wmh_seg',
-    version='1.6.0',
+    version='1.6.1',
     packages=find_packages(),
     include_package_data=True,
     package_data={'wmh_seg': ['nnunet_assets/*/*.json']},
-    description='WMH segmentation for FLAIR images',
+    description='White matter hyperintensity segmentation for in-vivo and ex-vivo MRI',
     author='Jinghang Li',
     author_email='jinghang.li@pitt.edu',
     url='https://github.com/jinghangli98/wmh_seg',  # Replace with your GitHub repo
